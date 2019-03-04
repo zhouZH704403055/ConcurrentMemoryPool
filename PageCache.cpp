@@ -85,6 +85,7 @@ Span* PageCache::MapObjectToSpan(void* obj)
 void PageCache::ReleaseSpanToPageCache(Span* span)
 {	
 	std::unique_lock<std::mutex> lock(_mutex);
+	span->_usecount = 0;
 	//如果释放的内存超过了page cache所能管理的最大页数，直接还给系统
 	if (span->_pagequantity > MAX_PAGE)
 	{
