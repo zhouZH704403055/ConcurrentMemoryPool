@@ -56,7 +56,7 @@ Span* PageCache::_NewSpan(size_t page_quantity)
 		}
 	}
 	//没有找到有更大的span，直接向系统申请page cache所能管理的最大的MAX_PAGE页的内存
-	void* ptr = SystemAlloc(page_quantity);
+	void* ptr = SystemAlloc(MAX_PAGE);
 	//将申请到的MAX_PAGE页的max_span链接到自由链表中对应的span链表中
 	Span* max_span = new Span;
 	max_span->_pageid = (PageId)ptr >> PAGE_SHIFT;
