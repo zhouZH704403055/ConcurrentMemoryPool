@@ -8,20 +8,20 @@
 #endif //_WIN32
 
 
-//è‡ªç”±é“¾è¡¨çš„é•¿åº¦
+//×ÔÓÉÁ´±íµÄ³¤¶È
 const size_t NLISTS = 240;
-//è‡ªç”±é“¾è¡¨ä¸­æ‰€ç®¡ç†çš„å†…å­˜å¯¹è±¡çš„æœ€å¤§å­—èŠ‚æ•°
+//×ÔÓÉÁ´±íÖĞËù¹ÜÀíµÄÄÚ´æ¶ÔÏóµÄ×î´ó×Ö½ÚÊı
 const size_t MAX_SIZE = 64 * 1024;//64Kb
-//åˆ©ç”¨pageidæ±‚é¡µçš„èµ·å§‹åœ°å€çš„æ—¶å€™éœ€è¦å·¦ç§»çš„ä½æ•°ï¼Œé¡µçš„å¤§å°ä¸º4Kåˆ™ä¸º12ï¼Œ8Kåˆ™ä¸º14
+//ÀûÓÃpageidÇóÒ³µÄÆğÊ¼µØÖ·µÄÊ±ºòĞèÒª×óÒÆµÄÎ»Êı£¬Ò³µÄ´óĞ¡Îª4KÔòÎª12£¬8KÔòÎª14
 const size_t PAGE_SHIFT = 12;
-//page cacheä¸­æ‰€ç®¡ç†çš„æœ€å¤§çš„
+//page cacheÖĞËù¹ÜÀíµÄ×î´óµÄ
 const size_t MAX_PAGE = 128;
 
 inline static void* SystemAlloc(size_t page_quantity)
 {
 #ifdef _WIN32
-	void* ptr = VirtualAlloc(NULL, MAX_PAGE << PAGE_SHIFT, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
-	//å¦‚æœç”³è¯·å¤±è´¥ï¼ŒæŠ›å¼‚å¸¸
+	void* ptr = VirtualAlloc(NULL, page_quantity << PAGE_SHIFT, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+	//Èç¹ûÉêÇëÊ§°Ü£¬Å×Òì³£
 	if (ptr == nullptr)
 	{
 		throw std::bad_alloc();
@@ -41,7 +41,7 @@ inline static void SystemFree(void* ptr)
 #endif
 }
 
-//ç›¸å½“äºobj->nextï¼Œè¿”å›objå†…å­˜å¯¹è±¡çš„ä¸‹ä¸€ä¸ªå†…å­˜å¯¹è±¡
+//Ïàµ±ÓÚobj->next£¬·µ»ØobjÄÚ´æ¶ÔÏóµÄÏÂÒ»¸öÄÚ´æ¶ÔÏó
 static inline void*& ObjNext(void* obj)
 {
 	return *((void**)obj);
@@ -50,15 +50,15 @@ static inline void*& ObjNext(void* obj)
 typedef size_t PageId;
 struct Span
 {
-	PageId _pageid = 0;//é¡µç 
-	size_t _pagequantity = 0;//é¡µçš„æ•°é‡
+	PageId _pageid = 0;//Ò³Âë
+	size_t _pagequantity = 0;//Ò³µÄÊıÁ¿
 
 	Span* _next = nullptr;
 	Span* _prev = nullptr;
 
-	void* _objlist = nullptr;//è‡ªç”±é“¾è¡¨
-	size_t _objsize = 0;//å¯¹è±¡é“¾è¡¨ä¸­å‚¨å­˜çš„å†…å­˜å¯¹è±¡å¤§å°
-	size_t _usecount = 0;//ä½¿ç”¨è®¡æ•°
+	void* _objlist = nullptr;//×ÔÓÉÁ´±í
+	size_t _objsize = 0;//¶ÔÏóÁ´±íÖĞ´¢´æµÄÄÚ´æ¶ÔÏó´óĞ¡
+	size_t _usecount = 0;//Ê¹ÓÃ¼ÆÊı
 };
 
 class SpanList
@@ -66,13 +66,13 @@ class SpanList
 public:
 	SpanList()
 	{
-		//å¸¦å¤´ç»“ç‚¹çš„åŒå‘é“¾è¡¨
+		//´øÍ·½áµãµÄË«ÏòÁ´±í
 		_head = new Span;
 		_head->_next = _head;
 		_head->_prev = _head;
 	}
 
-	//åœ¨curä½ç½®çš„å‰ä¸€ä¸ªæ’å…¥new_span
+	//ÔÚcurÎ»ÖÃµÄÇ°Ò»¸ö²åÈënew_span
 	void Insert(Span* cur,Span* new_span)
 	{
 		assert(cur);
@@ -190,27 +190,27 @@ public:
 	}
 
 private:
-	void* _memorylist = nullptr;//å‚¨å­˜å†…å­˜å¯¹è±¡çš„é“¾è¡¨
-	size_t _size = 0;//é“¾è¡¨ä¸­å‚¨å­˜çš„å†…å­˜å¯¹è±¡çš„ä¸ªæ•°
-	size_t _maxsize = 2;//è‡ªç”±é“¾è¡¨ä¸­å‚¨å­˜å†…å­˜å¯¹è±¡çš„æœ€å¤§ä¸ªæ•°ï¼Œå¦‚æœè¶…è¿‡è¿™ä¸ªæ•°é‡å°±è¿˜ç»™ä¸Šä¸€å±‚cacheï¼Œæ˜¯åŠ¨æ€å˜åŒ–çš„
+	void* _memorylist = nullptr;//´¢´æÄÚ´æ¶ÔÏóµÄÁ´±í
+	size_t _size = 0;//Á´±íÖĞ´¢´æµÄÄÚ´æ¶ÔÏóµÄ¸öÊı
+	size_t _maxsize = 2;//×ÔÓÉÁ´±íÖĞ´¢´æÄÚ´æ¶ÔÏóµÄ×î´ó¸öÊı£¬Èç¹û³¬¹ıÕâ¸öÊıÁ¿¾Í»¹¸øcentral cache£¬ÊÇ¶¯Ì¬±ä»¯µÄ
 };
 
-//ç®¡ç†å¯¹é½æ˜ å°„
+//¹ÜÀí¶ÔÆëÓ³Éä
 class ClassSize
 {
-	// å¯¹é½è§„åˆ™æ§åˆ¶åœ¨12%å·¦å³çš„å†…ç¢ç‰‡æµªè´¹
-	// [1,128]				8byteå¯¹é½		freelist[0,16)
-	// [129,1024]			16byteå¯¹é½		freelist[16,72)
-	// [1025,8*1024]		128byteå¯¹é½		freelist[72,128)
-	// [8*1024+1,64*1024]	512byteå¯¹é½		freelist[128,240)
+	// ¶ÔÆë¹æÔò¿ØÖÆÔÚ12%×óÓÒµÄÄÚËéÆ¬ÀË·Ñ
+	// [1,128]				8byte¶ÔÆë		freelist[0,16)
+	// [129,1024]			16byte¶ÔÆë		freelist[16,72)
+	// [1025,8*1024]		128byte¶ÔÆë		freelist[72,128)
+	// [8*1024+1,64*1024]	512byte¶ÔÆë		freelist[128,240)
 public:
-	//alignæ˜¯å¯¹é½æ•°
+	//alignÊÇ¶ÔÆëÊı
 	static inline size_t _Roundup(size_t memory_size,size_t align)
 	{
 		return (memory_size + align - 1)&(~(align - 1));
 	}
 
-	//è®¡ç®—éœ€è¦å¼€è¾Ÿçš„å†…å­˜å¤§å°ç»è¿‡å¯¹é½ä¹‹ååº”è¯¥å¼€è¾Ÿçš„å†…å­˜å¤§å°ï¼Œå‘ä¸Šå–æ•´
+	//¼ÆËãĞèÒª¿ª±ÙµÄÄÚ´æ´óĞ¡¾­¹ı¶ÔÆëÖ®ºóÓ¦¸Ã¿ª±ÙµÄÄÚ´æ´óĞ¡£¬ÏòÉÏÈ¡Õû
 	static inline size_t Roundup(size_t memory_size)
 	{
 		assert(memory_size <= MAX_SIZE);
@@ -233,14 +233,14 @@ public:
 		return -1;
 	}
 
-	//alignä¸ºå¯¹é½æ•°ï¼Œalign_leftä¸º1å˜ä¸ºå¯¹é½æ•°æ‰€éœ€è¦å·¦ç§»çš„ä½æ•°
+	//alignÎª¶ÔÆëÊı£¬align_leftÎª1±äÎª¶ÔÆëÊıËùĞèÒª×óÒÆµÄÎ»Êı
 	static inline size_t _Index(size_t memory_size, size_t align_left)
 	{
-		//ç›¸å½“äº(memory_size+align-1)/align-1ï¼Œä½¿ç”¨æœªæ“ä½œä»£æ›¿é™¤æ³•æ“ä½œï¼Œæ•ˆç‡æ›´é«˜
+		//Ïàµ±ÓÚ(memory_size+align-1)/align-1£¬Ê¹ÓÃÎ´²Ù×÷´úÌæ³ı·¨²Ù×÷£¬Ğ§ÂÊ¸ü¸ß
 		return ((memory_size + (1 << align_left) - 1) >> align_left) - 1;
 	}
 
-	//è®¡ç®—æ‰€éœ€å¤§å°çš„å†…å­˜å¯¹è±¡æ‰€åœ¨é“¾è¡¨åœ¨è‡ªç”±é“¾è¡¨ä¸­çš„åæ ‡
+	//¼ÆËãËùĞè´óĞ¡µÄÄÚ´æ¶ÔÏóËùÔÚÁ´±íÔÚ×ÔÓÉÁ´±íÖĞµÄ×ø±ê
 	static inline size_t Index(size_t memory_size)
 	{
 		assert(memory_size <= MAX_SIZE);
@@ -264,7 +264,7 @@ public:
 		return -1;
 	}
 
-	//æ ¹æ®æ‰€éœ€è¦çš„å†…å­˜å¯¹è±¡çš„å¤§å°æ¥è®¡ç®—ä¸€æ¬¡æ‰€è¦è·å–çš„å†…å­˜å¯¹è±¡çš„æ•°é‡
+	//¸ù¾İËùĞèÒªµÄÄÚ´æ¶ÔÏóµÄ´óĞ¡À´¼ÆËãÒ»´ÎËùÒª»ñÈ¡µÄÄÚ´æ¶ÔÏóµÄÊıÁ¿
 	static size_t QuantityToFetch(size_t memory_size)
 	{
 		if (memory_size == 0)
@@ -272,7 +272,7 @@ public:
 			return 0;
 		}
 
-		//éœ€è¦ç”³è¯·çš„å†…å­˜å¯¹è±¡çš„æ•°é‡ï¼Œè‡³å°‘ç”³è¯·2ä¸ªï¼Œæœ€å¤šç”³è¯·512ä¸ª
+		//ĞèÒªÉêÇëµÄÄÚ´æ¶ÔÏóµÄÊıÁ¿£¬ÖÁÉÙÉêÇë2¸ö£¬×î¶àÉêÇë512¸ö
 		int quantity = static_cast<int>(MAX_SIZE / memory_size);
 		if (quantity < 2)
 		{
@@ -285,7 +285,7 @@ public:
 		return quantity;
 	}
 
-	//éœ€è¦ç”³è¯·çš„é¡µæ•°
+	//ĞèÒªÉêÇëµÄÒ³Êı
 	static size_t QuantityMovePage(size_t memory_size)
 	{
 		size_t quantity = QuantityToFetch(memory_size);
